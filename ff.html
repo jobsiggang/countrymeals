@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>고등학교 급식 지도</title>
+    <style>
+        body { font-family: Arial; margin:0; padding:0; }
+        #map { width: 100%; height: 90vh; }
+        .infowindow { 
+            font-size: 14px; color: #333;
+            background: #FFE4B5; border-radius: 5px; padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>고등학교 급식 지도</h2>
+    <div id="map"></div>
+
+    <!-- 카카오 지도 SDK -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=06afb75f198d3177cfcff4f757f0bfa2"></script>
+    <script>
+        kakao.maps.load(function() {
+            var mapContainer = document.getElementById('map'),
+                mapOption = { 
+                    center: new kakao.maps.LatLng(37.5665, 126.9780),
+                    level: 8
+                };
+            var map = new kakao.maps.Map(mapContainer, mapOption);
+            var prevInfowindow = null;
+
+            // 구글 시트 JSON URL
+            const sheetUrl = "https://script.google.com/macros/s/AKfycbzwCwUyS00MQ34X_D4mLatNfzG2Glxg4FkJrbnuE2pdAKn_sw6jTeOUZ_96oHjIj0Ra6g/exec";
+
+            fetch(sheetUrl)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(row => {
+                    // 고등학교만 필터
+                    if (row['학교급구분'] !== "고등학교") return;
+
+                    const lat = parseFloat(row['위도']);
+                    const lng = parseFloat(row['경도']);
+                    if (isNaN(lat) || isNaN(lng)) return;
+
+                    const marker = new kakao.maps.Marker({
+                        map: map,
+                        position: new kakao.maps.LatLng(lat, lng)
+                    });
+
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `<div class="infowindow">
+                                    <strong>${row['학교명']}</strong><br>
+                                    주소: ${row['소재지도로명주소']}<br>
+                                    오늘 급식: ${row['메뉴'] || "정보 없음"}
+                                  </div>`
+                    });
+
+                    kakao.maps.event.addListener(marker, 'click', function() {
+                        if (prevInfowindow) prevInfowindow.close();
+                        infowindow.open(map, marker);
+                        prevInfowindow = infowindow;
+                    });
+                });
+            })
+            .catch(err => console.error(err));
+        });
+    </script>
+</body>
+</html>
