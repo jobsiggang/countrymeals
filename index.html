@@ -16,53 +16,84 @@
     <h2>고등학교 급식 지도</h2>
     <div id="map"></div>
 
-    <!-- 카카오 지도 SDK -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=06afb75f198d3177cfcff4f757f0bfa2"></script>
     <script>
-        kakao.maps.load(function() {
-            var mapContainer = document.getElementById('map'),
-                mapOption = { 
-                    center: new kakao.maps.LatLng(37.5665, 126.9780),
-                    level: 8
-                };
-            var map = new kakao.maps.Map(mapContainer, mapOption);
-            var prevInfowindow = null;
+        // 서버리스 함수에서 API 키를 가져오는 비동기 함수
+        async function getKakaoApiKey() {
+            try {
+                // Vercel 배포 시, 이 경로는 자동으로 서버리스 함수로 연결됩니다.
+                const response = await fetch('/api/get-key');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.apiKey;
+            } catch (error) {
+                console.error('카카오 지도 API 키를 불러오는 데 실패했습니다:', error);
+                // 오류 처리: 사용자에게 오류 메시지를 보여주거나 다른 조치를 취할 수 있습니다.
+                return null;
+            }
+        }
 
-            // 구글 시트 JSON URL
-            const sheetUrl = "https://script.google.com/macros/s/AKfycbzwCwUyS00MQ34X_D4mLatNfzG2Glxg4FkJrbnuE2pdAKn_sw6jTeOUZ_96oHjIj0Ra6g/exec";
+        // 페이지 로드 시 API 키를 받아와서 SDK를 로드하고 지도를 초기화합니다.
+        document.addEventListener('DOMContentLoaded', async function() {
+            const apiKey = await getKakaoApiKey();
+            if (!apiKey) {
+                // API 키를 가져오지 못하면 더 이상 진행하지 않습니다.
+                return;
+            }
+            
+            // 카카오 지도 SDK 스크립트 동적 생성
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
+            script.onload = function() {
+                // SDK 로드 완료 후 `kakao.maps.load` 함수를 호출하여 지도를 초기화합니다.
+                kakao.maps.load(function() {
+                    const mapContainer = document.getElementById('map');
+                    const mapOption = { 
+                        center: new kakao.maps.LatLng(37.5665, 126.9780),
+                        level: 8
+                    };
+                    const map = new kakao.maps.Map(mapContainer, mapOption);
+                    let prevInfowindow = null;
 
-            fetch(sheetUrl)
-            .then(res => res.json())
-            .then(data => {
-                data.forEach(row => {
-                    // 고등학교만 필터
-                    if (row['학교급구분'] !== "고등학교") return;
+                    // 구글 시트 JSON URL
+                    const sheetUrl = "https://script.google.com/macros/s/AKfycbzwCwUyS00MQ34X_D4mLatNfzG2Glxg4FkJrbnuE2pdAKn_sw6jTeOUZ_96oHjIj0Ra6g/exec";
 
-                    const lat = parseFloat(row['위도']);
-                    const lng = parseFloat(row['경도']);
-                    if (isNaN(lat) || isNaN(lng)) return;
+                    fetch(sheetUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        data.forEach(row => {
+                            if (row['학교급구분'] !== "고등학교") return;
 
-                    const marker = new kakao.maps.Marker({
-                        map: map,
-                        position: new kakao.maps.LatLng(lat, lng)
-                    });
+                            const lat = parseFloat(row['위도']);
+                            const lng = parseFloat(row['경도']);
+                            if (isNaN(lat) || isNaN(lng)) return;
 
-                    const infowindow = new kakao.maps.InfoWindow({
-                        content: `<div class="infowindow">
-                                    <strong>${row['학교명']}</strong><br>
-                                    주소: ${row['소재지도로명주소']}<br>
-                                    오늘 급식: ${row['메뉴'] || "정보 없음"}
-                                  </div>`
-                    });
+                            const marker = new kakao.maps.Marker({
+                                map: map,
+                                position: new kakao.maps.LatLng(lat, lng)
+                            });
 
-                    kakao.maps.event.addListener(marker, 'click', function() {
-                        if (prevInfowindow) prevInfowindow.close();
-                        infowindow.open(map, marker);
-                        prevInfowindow = infowindow;
-                    });
+                            const infowindow = new kakao.maps.InfoWindow({
+                                content: `<div class="infowindow">
+                                            <strong>${row['학교명']}</strong><br>
+                                            주소: ${row['소재지도로명주소']}<br>
+                                            오늘 급식: ${row['메뉴'] || "정보 없음"}
+                                          </div>`
+                            });
+
+                            kakao.maps.event.addListener(marker, 'click', function() {
+                                if (prevInfowindow) prevInfowindow.close();
+                                infowindow.open(map, marker);
+                                prevInfowindow = infowindow;
+                            });
+                        });
+                    })
+                    .catch(err => console.error(err));
                 });
-            })
-            .catch(err => console.error(err));
+            };
+            document.head.appendChild(script);
         });
     </script>
 </body>
