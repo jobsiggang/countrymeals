@@ -94,8 +94,6 @@
                     .then(res => res.json())
                     .then(data => {
                         data.forEach(row => {
-                            if (row['학교급구분'] !== "대학교") return;
-
                             const lat = parseFloat(row['위도']);
                             const lng = parseFloat(row['경도']);
                             if (isNaN(lat) || isNaN(lng)) return;
