@@ -94,6 +94,7 @@
                     .then(res => res.json())
                     .then(data => {
                         data.forEach(row => {
+                            console.log(row);
                             const lat = parseFloat(row['위도']);
                             const lng = parseFloat(row['경도']);
                             if (isNaN(lat) || isNaN(lng)) return;
