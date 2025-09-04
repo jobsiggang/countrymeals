@@ -93,9 +93,9 @@
                     fetch(sheetUrl)
                     .then(res => res.json())
                     .then(data => {
-                        consol.log(data);
+                        
                         data.forEach(row => {
-                            console.log(row);
+                            if(row["학교구분"]!="대학" && row["학교구분"]!="전문대학" ) return;
                             const lat = parseFloat(row['위도']);
                             const lng = parseFloat(row['경도']);
                             if (isNaN(lat) || isNaN(lng)) return;
