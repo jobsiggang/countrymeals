@@ -16,6 +16,15 @@
             font-size: 2.5em; 
             margin-bottom: 10px;
         }
+        #controls {
+            margin: 15px 0;
+        }
+        select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
         #map-container {
             width: 100%;
             height: 80vh;
@@ -37,7 +46,7 @@
             border-radius: 10px; 
             padding: 10px;
             line-height: 1.5;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .infowindow strong { 
             font-size: 16px; 
@@ -51,13 +60,19 @@
 </head>
 <body>
     <h2>📍 전국 대학교 지도</h2>
-    <h3>출처: 교육부_대학교 주소기반 좌표정보_20241030</h3>
+    
+    <div id="controls">
+        <label for="universitySelect">대학교 선택: </label>
+        <select id="universitySelect">
+            <option value="">-- 대학교를 선택하세요 --</option>
+        </select>
+    </div>
+
     <div id="map-container">
         <div id="map"></div>
     </div>
 
     <script>
-        // 서버리스 함수에서 API 키 가져오기
         async function getKakaoApiKey() {
             try {
                 const response = await fetch('/api/get-key');
@@ -70,7 +85,6 @@
             }
         }
 
-        // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async function() {
             const apiKey = await getKakaoApiKey();
             if (!apiKey) return;
@@ -82,25 +96,34 @@
                 kakao.maps.load(function() {
                     const mapContainer = document.getElementById('map');
                     const mapOption = { 
-                        center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 중심
+                        center: new kakao.maps.LatLng(37.5665, 126.9780),
                         level: 8
                     };
                     const map = new kakao.maps.Map(mapContainer, mapOption);
                     let prevInfowindow = null;
 
-                    // ✅ 구글 시트 데이터 가져오기 (대학교 목록 + 홈페이지 + 전화번호 포함)
                     const sheetUrl = "https://script.google.com/macros/s/AKfycbyiQfPyTQIP1wuTApHqfK-MRDNaFzz0DJZTqFGUHVtWCH0gkH6XG8osxNQK0zDayaFMEw/exec";
 
                     fetch(sheetUrl)
                     .then(res => res.json())
                     .then(data => {
-                        
+                        const universitySelect = document.getElementById('universitySelect');
+                        const uniMap = {}; // 학교명 -> {lat, lng, marker}
+
                         data.forEach(row => {
-                            if(row["학교구분"]!="대학" && row["학교구분"]!="전문대학" ) return;
+                            if(row["학교구분"]!="대학" && row["학교구분"]!="전문대학") return;
+
                             const lat = parseFloat(row['위도']);
                             const lng = parseFloat(row['경도']);
                             if (isNaN(lat) || isNaN(lng)) return;
 
+                            // 드롭다운 옵션 추가
+                            const option = document.createElement('option');
+                            option.value = row['학교명'];
+                            option.textContent = row['학교명'];
+                            universitySelect.appendChild(option);
+
+                            // 지도 마커 생성
                             const marker = new kakao.maps.Marker({
                                 map: map,
                                 position: new kakao.maps.LatLng(lat, lng)
@@ -120,6 +143,23 @@
                                 infowindow.open(map, marker);
                                 prevInfowindow = infowindow;
                             });
+
+                            // 데이터 저장
+                            uniMap[row['학교명']] = {lat, lng, marker};
+                        });
+
+                        // 드롭다운 이벤트
+                        universitySelect.addEventListener('change', function() {
+                            const selected = this.value;
+                            if (selected && uniMap[selected]) {
+                                const {lat, lng, marker} = uniMap[selected];
+                                const moveLatLon = new kakao.maps.LatLng(lat, lng);
+                                map.setCenter(moveLatLon);
+                                map.setLevel(4);
+
+                                // 해당 마커 클릭한 것처럼 인포윈도우 열기
+                                kakao.maps.event.trigger(marker, 'click');
+                            }
                         });
                     })
                     .catch(err => console.error("데이터 로드 오류:", err));
