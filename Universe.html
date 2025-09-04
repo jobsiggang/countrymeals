@@ -13,8 +13,8 @@
         }
         h2 { 
             color: #0066cc; 
-            font-size: 2.2em; 
-            margin-bottom: 15px;
+            font-size: 2.5em; 
+            margin-bottom: 10px;
         }
         #map-container {
             width: 100%;
@@ -24,7 +24,7 @@
             align-items: center;
         }
         #map { 
-            width: 85%; 
+            width: 80%; 
             height: 100%; 
             border-radius: 15px; 
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
@@ -40,7 +40,7 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         .infowindow strong { 
-            font-size: 15px; 
+            font-size: 16px; 
             color: #0066cc; 
         }
         .infowindow a { 
@@ -50,79 +50,82 @@
     </style>
 </head>
 <body>
-    <h2>📍 국립강릉원주대학교 캠퍼스 지도</h2>
+    <h2>📍 전국 대학교 지도</h2>
     <div id="map-container">
         <div id="map"></div>
     </div>
 
     <script>
-        // 카카오 지도 API 키 직접 넣기 (테스트용) → 실제 배포 시 /api/get-key 방식 권장
-        const apiKey = "여기에_카카오_API_키";
-
-        // 대학교 데이터 (샘플 JSON)
-        const universityData = [
-            {
-                "학교명": "국립강릉원주대학교",
-                "본분교": "본교",
-                "위도": 37.7656949331,
-                "경도": 128.8700048366,
-                "도로명주소": "강원특별자치도 강릉시 죽헌길 7",
-                "학교홈페이지": "http://www.gwnu.ac.kr",
-                "학교대표번호": "033-642-7001"
-            },
-            {
-                "학교명": "국립강릉원주대학교",
-                "본분교": "제2캠퍼스",
-                "위도": 37.3051724484,
-                "경도": 127.9221473387,
-                "도로명주소": "강원특별자치도 원주시 흥업면 남원로 150",
-                "학교홈페이지": "http://www.gwnu.ac.kr",
-                "학교대표번호": "033-760-8020"
+        // 서버리스 함수에서 API 키 가져오기
+        async function getKakaoApiKey() {
+            try {
+                const response = await fetch('/api/get-key');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                return data.apiKey;
+            } catch (error) {
+                console.error('카카오 지도 API 키 로드 실패:', error);
+                return null;
             }
-        ];
+        }
 
-        // 카카오 지도 불러오기
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
-        script.onload = function() {
-            kakao.maps.load(function() {
-                const mapContainer = document.getElementById('map');
-                const mapOption = { 
-                    center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 기본 좌표
-                    level: 12
-                };
-                const map = new kakao.maps.Map(mapContainer, mapOption);
-                let prevInfowindow = null;
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', async function() {
+            const apiKey = await getKakaoApiKey();
+            if (!apiKey) return;
 
-                universityData.forEach(row => {
-                    const lat = parseFloat(row['위도']);
-                    const lng = parseFloat(row['경도']);
-                    if (isNaN(lat) || isNaN(lng)) return;
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
+            script.onload = function() {
+                kakao.maps.load(function() {
+                    const mapContainer = document.getElementById('map');
+                    const mapOption = { 
+                        center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 중심
+                        level: 8
+                    };
+                    const map = new kakao.maps.Map(mapContainer, mapOption);
+                    let prevInfowindow = null;
 
-                    const marker = new kakao.maps.Marker({
-                        map: map,
-                        position: new kakao.maps.LatLng(lat, lng)
-                    });
+                    // ✅ 구글 시트 데이터 가져오기 (대학교 목록 + 홈페이지 + 전화번호 포함)
+                    const sheetUrl = "https://script.google.com/macros/s/여기에_구글앱스스크립트_URL/exec";
 
-                    const infowindow = new kakao.maps.InfoWindow({
-                        content: `<div class="infowindow">
-                                    <strong>${row['학교명']} (${row['본분교']})</strong><br>
-                                    주소: ${row['도로명주소']}<br>
-                                    홈페이지: <a href="${row['학교홈페이지']}" target="_blank">${row['학교홈페이지']}</a><br>
-                                    대표전화: ${row['학교대표번호']}
-                                  </div>`
-                    });
+                    fetch(sheetUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        data.forEach(row => {
+                            if (row['학교급구분'] !== "대학교") return;
 
-                    kakao.maps.event.addListener(marker, 'click', function() {
-                        if (prevInfowindow) prevInfowindow.close();
-                        infowindow.open(map, marker);
-                        prevInfowindow = infowindow;
-                    });
+                            const lat = parseFloat(row['위도']);
+                            const lng = parseFloat(row['경도']);
+                            if (isNaN(lat) || isNaN(lng)) return;
+
+                            const marker = new kakao.maps.Marker({
+                                map: map,
+                                position: new kakao.maps.LatLng(lat, lng)
+                            });
+
+                            const infowindow = new kakao.maps.InfoWindow({
+                                content: `<div class="infowindow">
+                                            <strong>${row['학교명']}</strong><br>
+                                            홈페이지: <a href="${row['학교홈페이지']}" target="_blank">${row['학교홈페이지']}</a><br>
+                                            전화번호: ${row['학교대표번호'] || "정보 없음"}<br>
+                                            주소: ${row['도로명주소']}
+                                          </div>`
+                            });
+
+                            kakao.maps.event.addListener(marker, 'click', function() {
+                                if (prevInfowindow) prevInfowindow.close();
+                                infowindow.open(map, marker);
+                                prevInfowindow = infowindow;
+                            });
+                        });
+                    })
+                    .catch(err => console.error("데이터 로드 오류:", err));
                 });
-            });
-        };
-        document.head.appendChild(script);
+            };
+            document.head.appendChild(script);
+        });
     </script>
 </body>
 </html>
