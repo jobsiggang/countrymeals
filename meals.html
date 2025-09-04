@@ -113,6 +113,12 @@
             }
         }
 
+        // 학교 이름순 정렬 함수
+        function sortSchoolDataByName(list) {
+            // localeCompare로 한글 지원
+            return list.slice().sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+        }
+
         document.addEventListener('DOMContentLoaded', async function() {
             displayTodayDate();
             const apiKey = await getKakaoApiKey();
@@ -132,7 +138,7 @@
 
                     const schoolSelect = document.getElementById("schoolSelect");
                     const schoolSearch = document.getElementById("schoolSearch");
-                    let schoolData = []; // 학교 정보 저장
+                    let schoolData = []; // 현재 표시되는 학교 정보
                     let allSchoolData = []; // 전체 학교 원본
 
                     const sheetUrl = "https://script.google.com/macros/s/AKfycbxWmo9v3ZntFULZjXCWedoVvI9BcO6qSwee-sJX9q8shwyTmJxjeyEgxakB6MTKA8kHbA/exec";
@@ -176,21 +182,25 @@
                             });
                         });
 
-                        // 초기 schoolData 세팅 및 드롭다운 렌더
+                        // 이름순 정렬
+                        allSchoolData = sortSchoolDataByName(allSchoolData);
                         schoolData = [...allSchoolData];
                         renderSchoolDropdown(schoolData);
                     })
                     .catch(err => console.error(err));
 
                     function renderSchoolDropdown(list) {
-                        // 드롭다운 초기화
+                        // 이름순 정렬
+                        const sortedList = sortSchoolDataByName(list);
                         schoolSelect.innerHTML = '<option value="">-- 학교를 선택하세요 --</option>';
-                        list.forEach((school, idx) => {
+                        sortedList.forEach((school, idx) => {
                             const option = document.createElement("option");
                             option.value = idx;
                             option.textContent = school.name;
                             schoolSelect.appendChild(option);
                         });
+                        // schoolData를 UI와 동기화
+                        schoolData = sortedList;
                     }
 
                     // 검색 기능
