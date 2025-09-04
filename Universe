@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>대학교 지도</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: #eef2f3; 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center;
+        }
+        h2 { 
+            color: #0066cc; 
+            font-size: 2.2em; 
+            margin-bottom: 15px;
+        }
+        #map-container {
+            width: 100%;
+            height: 80vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #map { 
+            width: 85%; 
+            height: 100%; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+            border: 5px solid #fff;
+        }
+        .infowindow { 
+            font-size: 14px; 
+            color: #333;
+            background: #fff; 
+            border-radius: 10px; 
+            padding: 10px;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .infowindow strong { 
+            font-size: 15px; 
+            color: #0066cc; 
+        }
+        .infowindow a { 
+            color: #ff6600; 
+            text-decoration: none; 
+        }
+    </style>
+</head>
+<body>
+    <h2>📍 국립강릉원주대학교 캠퍼스 지도</h2>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // 카카오 지도 API 키 직접 넣기 (테스트용) → 실제 배포 시 /api/get-key 방식 권장
+        const apiKey = "여기에_카카오_API_키";
+
+        // 대학교 데이터 (샘플 JSON)
+        const universityData = [
+            {
+                "학교명": "국립강릉원주대학교",
+                "본분교": "본교",
+                "위도": 37.7656949331,
+                "경도": 128.8700048366,
+                "도로명주소": "강원특별자치도 강릉시 죽헌길 7",
+                "학교홈페이지": "http://www.gwnu.ac.kr",
+                "학교대표번호": "033-642-7001"
+            },
+            {
+                "학교명": "국립강릉원주대학교",
+                "본분교": "제2캠퍼스",
+                "위도": 37.3051724484,
+                "경도": 127.9221473387,
+                "도로명주소": "강원특별자치도 원주시 흥업면 남원로 150",
+                "학교홈페이지": "http://www.gwnu.ac.kr",
+                "학교대표번호": "033-760-8020"
+            }
+        ];
+
+        // 카카오 지도 불러오기
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
+        script.onload = function() {
+            kakao.maps.load(function() {
+                const mapContainer = document.getElementById('map');
+                const mapOption = { 
+                    center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 기본 좌표
+                    level: 12
+                };
+                const map = new kakao.maps.Map(mapContainer, mapOption);
+                let prevInfowindow = null;
+
+                universityData.forEach(row => {
+                    const lat = parseFloat(row['위도']);
+                    const lng = parseFloat(row['경도']);
+                    if (isNaN(lat) || isNaN(lng)) return;
+
+                    const marker = new kakao.maps.Marker({
+                        map: map,
+                        position: new kakao.maps.LatLng(lat, lng)
+                    });
+
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `<div class="infowindow">
+                                    <strong>${row['학교명']} (${row['본분교']})</strong><br>
+                                    주소: ${row['도로명주소']}<br>
+                                    홈페이지: <a href="${row['학교홈페이지']}" target="_blank">${row['학교홈페이지']}</a><br>
+                                    대표전화: ${row['학교대표번호']}
+                                  </div>`
+                    });
+
+                    kakao.maps.event.addListener(marker, 'click', function() {
+                        if (prevInfowindow) prevInfowindow.close();
+                        infowindow.open(map, marker);
+                        prevInfowindow = infowindow;
+                    });
+                });
+            });
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
