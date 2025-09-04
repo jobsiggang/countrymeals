@@ -93,6 +93,7 @@
                     fetch(sheetUrl)
                     .then(res => res.json())
                     .then(data => {
+                        consol.log(data);
                         data.forEach(row => {
                             console.log(row);
                             const lat = parseFloat(row['위도']);
