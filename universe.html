@@ -148,7 +148,7 @@
                             const infowindow = new kakao.maps.InfoWindow({
                                 content: `<div class="infowindow">
                                             <strong>${row['학교명']}</strong><br>
-                                            홈페이지: <a href="${row['학교홈페이지']}" target="_blank">${row['학교홈페이지']}</a><br>
+                                            홈페이지: <a href="http://${row['학교홈페이지']}" target="_blank">${row['학교홈페이지']}</a><br>
                                             전화번호: ${row['학교대표번호'] || "정보 없음"}<br>
                                             주소: ${row['도로명주소']}
                                           </div>`
