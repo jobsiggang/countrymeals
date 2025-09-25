@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     }
 
     // 구글 시트 웹앱 URL (데이터 JSON 반환)
-    const sheetUrl = "https://script.google.com/macros/s/YOUR_GOOGLE_SHEET_ID/exec";
+    const sheetUrl = "https://script.google.com/macros/s/AKfycbxWmo9v3ZntFULZjXCWedoVvI9BcO6qSwee-sJX9q8shwyTmJxjeyEgxakB6MTKA8kHbA/exec";
 
     const sheetRes = await fetch(sheetUrl);
     const sheetData = await sheetRes.json();
