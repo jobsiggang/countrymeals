@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -24,6 +25,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <Script
+          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services`}
+          strategy="beforeInteractive"
+          onError={(error) => {
+            console.error('카카오맵 스크립트 로드 실패:', error);
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

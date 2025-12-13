@@ -48,42 +48,55 @@ export default function Home() {
   // 카카오맵 초기화
   useEffect(() => {
     console.log('카카오맵 초기화 시작');
-    console.log('API Key:', process.env.NEXT_PUBLIC_KAKAO_MAP_KEY);
     
     if (typeof window === 'undefined') return;
 
-    const script = document.createElement('script');
-    const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
-    script.async = true;
-    
-    script.onload = () => {
-      console.log('카카오맵 SDK 로드 완료');
+    const initMap = () => {
       if (!mapContainer.current) {
         console.error('mapContainer가 없습니다');
         return;
       }
       if (!window.kakao) {
         console.error('window.kakao가 없습니다');
+        // 재시도
+        setTimeout(initMap, 500);
         return;
       }
 
-      const options = {
-        center: new window.kakao.maps.LatLng(37.5665, 126.978),
-        level: 8
-      };
+      try {
+        const options = {
+          center: new window.kakao.maps.LatLng(37.5665, 126.978),
+          level: 8
+        };
 
-      const mapInstance = new window.kakao.maps.Map(mapContainer.current, options);
-      console.log('지도 생성 완료');
-      setMap(mapInstance);
-    };
-    
-    script.onerror = (error) => {
-      console.error('카카오맵 SDK 로드 실패:', error);
-      console.error('Script src:', script.src);
+        const mapInstance = new window.kakao.maps.Map(mapContainer.current, options);
+        console.log('지도 생성 완료');
+        setMap(mapInstance);
+      } catch (err) {
+        console.error('지도 생성 중 에러:', err);
+      }
     };
 
-    document.head.appendChild(script);
+    // 카카오맵 SDK 로드 대기
+    if (window.kakao) {
+      console.log('카카오맵이 이미 로드됨');
+      initMap();
+    } else {
+      console.log('카카오맵 로드 대기 중...');
+      const timer = setInterval(() => {
+        if (window.kakao) {
+          console.log('카카오맵 로드 완료');
+          clearInterval(timer);
+          initMap();
+        }
+      }, 100);
+
+      // 10초 타임아웃
+      setTimeout(() => {
+        clearInterval(timer);
+        console.error('카카오맵 로드 타임아웃');
+      }, 10000);
+    }
   }, []);
 
   // 마커 표시
