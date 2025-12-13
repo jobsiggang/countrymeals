@@ -31,8 +31,11 @@ export default function Home() {
   useEffect(() => {
     const fetchSchools = async () => {
       try {
+        console.log('학교 데이터 로드 시작');
         const res = await fetch('/api/schools?limit=100');
+        console.log('응답 상태:', res.status);
         const data = await res.json();
+        console.log('로드된 학교 수:', data.schools?.length || 0);
         setSchools(data.schools || []);
       } catch (error) {
         console.error('학교 데이터 로드 실패:', error);
@@ -44,13 +47,26 @@ export default function Home() {
 
   // 카카오맵 초기화
   useEffect(() => {
+    console.log('카카오맵 초기화 시작');
+    console.log('API Key:', process.env.NEXT_PUBLIC_KAKAO_MAP_KEY);
+    
     if (typeof window === 'undefined') return;
 
     const script = document.createElement('script');
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services`;
+    const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
     script.async = true;
+    
     script.onload = () => {
-      if (!mapContainer.current || !window.kakao) return;
+      console.log('카카오맵 SDK 로드 완료');
+      if (!mapContainer.current) {
+        console.error('mapContainer가 없습니다');
+        return;
+      }
+      if (!window.kakao) {
+        console.error('window.kakao가 없습니다');
+        return;
+      }
 
       const options = {
         center: new window.kakao.maps.LatLng(37.5665, 126.978),
@@ -58,7 +74,13 @@ export default function Home() {
       };
 
       const mapInstance = new window.kakao.maps.Map(mapContainer.current, options);
+      console.log('지도 생성 완료');
       setMap(mapInstance);
+    };
+    
+    script.onerror = (error) => {
+      console.error('카카오맵 SDK 로드 실패:', error);
+      console.error('Script src:', script.src);
     };
 
     document.head.appendChild(script);
@@ -66,8 +88,11 @@ export default function Home() {
 
   // 마커 표시
   useEffect(() => {
+    console.log('마커 표시 시작 - map:', !!map, 'schools:', schools.length, 'kakao:', !!window.kakao);
+    
     if (!map || schools.length === 0 || !window.kakao) return;
 
+    console.log('마커 생성 시작');
     markers.forEach((marker) => marker.setMap(null));
 
     const newMarkers: any[] = [];
@@ -91,6 +116,7 @@ export default function Home() {
       bounds.extend(position);
     });
 
+    console.log('마커 생성 완료:', newMarkers.length);
     map.setBounds(bounds);
     setMarkers(newMarkers);
   }, [map, schools]);
