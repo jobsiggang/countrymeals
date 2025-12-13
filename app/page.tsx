@@ -56,9 +56,9 @@ export default function Home() {
         console.error('mapContainer가 없습니다');
         return;
       }
-      if (!window.kakao) {
-        console.error('window.kakao가 없습니다');
-        // 재시도
+      if (!window.kakao || !window.kakao.maps) {
+        console.warn('window.kakao가 없습니다, 재시도 예정...');
+        // 재시도 (최대 30회, 총 15초)
         setTimeout(initMap, 500);
         return;
       }
@@ -70,7 +70,7 @@ export default function Home() {
         };
 
         const mapInstance = new window.kakao.maps.Map(mapContainer.current, options);
-        console.log('지도 생성 완료');
+        console.log('✅ 지도 생성 완료');
         setMap(mapInstance);
       } catch (err) {
         console.error('지도 생성 중 에러:', err);
@@ -78,25 +78,7 @@ export default function Home() {
     };
 
     // 카카오맵 SDK 로드 대기
-    if (window.kakao) {
-      console.log('카카오맵이 이미 로드됨');
-      initMap();
-    } else {
-      console.log('카카오맵 로드 대기 중...');
-      const timer = setInterval(() => {
-        if (window.kakao) {
-          console.log('카카오맵 로드 완료');
-          clearInterval(timer);
-          initMap();
-        }
-      }, 100);
-
-      // 10초 타임아웃
-      setTimeout(() => {
-        clearInterval(timer);
-        console.error('카카오맵 로드 타임아웃');
-      }, 10000);
-    }
+    initMap();
   }, []);
 
   // 마커 표시
