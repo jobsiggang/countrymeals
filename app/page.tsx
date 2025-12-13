@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 
 interface School {
   _id: string;
@@ -14,17 +15,11 @@ interface School {
   };
 }
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
+// Leaflet 동적 임포트
+const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false });
 
 export default function Home() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
   const [schools, setSchools] = useState<School[]>([]);
-  const [markers, setMarkers] = useState<any[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
 
   // 학교 데이터 로드
@@ -45,76 +40,6 @@ export default function Home() {
     fetchSchools();
   }, []);
 
-  // 카카오맵 초기화
-  useEffect(() => {
-    console.log('카카오맵 초기화 시작');
-    
-    if (typeof window === 'undefined') return;
-
-    const initMap = () => {
-      if (!mapContainer.current) {
-        console.error('mapContainer가 없습니다');
-        return;
-      }
-      if (!window.kakao || !window.kakao.maps) {
-        console.warn('window.kakao가 없습니다, 재시도 예정...');
-        // 재시도 (최대 30회, 총 15초)
-        setTimeout(initMap, 500);
-        return;
-      }
-
-      try {
-        const options = {
-          center: new window.kakao.maps.LatLng(37.5665, 126.978),
-          level: 8
-        };
-
-        const mapInstance = new window.kakao.maps.Map(mapContainer.current, options);
-        console.log('✅ 지도 생성 완료');
-        setMap(mapInstance);
-      } catch (err) {
-        console.error('지도 생성 중 에러:', err);
-      }
-    };
-
-    // 카카오맵 SDK 로드 대기
-    initMap();
-  }, []);
-
-  // 마커 표시
-  useEffect(() => {
-    console.log('마커 표시 시작 - map:', !!map, 'schools:', schools.length, 'kakao:', !!window.kakao);
-    
-    if (!map || schools.length === 0 || !window.kakao) return;
-
-    console.log('마커 생성 시작');
-    markers.forEach((marker) => marker.setMap(null));
-
-    const newMarkers: any[] = [];
-    const bounds = new window.kakao.maps.LatLngBounds();
-
-    schools.forEach((school) => {
-      const [lng, lat] = school.location.coordinates;
-      const position = new window.kakao.maps.LatLng(lat, lng);
-
-      const marker = new window.kakao.maps.Marker({
-        position,
-        title: school.schoolName
-      });
-
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        setSelectedSchool(school);
-      });
-
-      marker.setMap(map);
-      newMarkers.push(marker);
-      bounds.extend(position);
-    });
-
-    console.log('마커 생성 완료:', newMarkers.length);
-    map.setBounds(bounds);
-    setMarkers(newMarkers);
-  }, [map, schools]);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -128,9 +53,9 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
-            <div
-              ref={mapContainer}
-              className="w-full h-96 lg:h-[600px] rounded-lg shadow-lg bg-gray-200"
+            <MapComponent
+              schools={schools}
+              onSchoolSelect={setSelectedSchool}
             />
           </div>
 
