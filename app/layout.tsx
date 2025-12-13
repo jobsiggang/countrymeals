@@ -29,9 +29,6 @@ export default function RootLayout({
         <Script
           src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services`}
           strategy="beforeInteractive"
-          onError={(error) => {
-            console.error('카카오맵 스크립트 로드 실패:', error);
-          }}
         />
       </head>
       <body
